@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="/static/pico.indigo.min.css">
+    <title>Robot arm control</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Robot arm control</h1>
+      <div class="servo_container">
+        <input type="checkbox" id="immediate_update">
+        <label for="immediate_update">Immediate update</label>
+        <br>
+        <label for="shoulder_rotate">Shoulder rotate</label>
+        <input type="range" min="0" max="100" value="50" id="shoulder_rotate">
+        <label for="shoulder_tilt">Shoulder tilt</label>
+        <input type="range" min="0" max="100" value="50" id="shoulder_tilt">
+        <label for="elbow">Elbow</label>
+        <input type="range" min="0" max="100" value="50" id="elbow">
+        <label for="wrist_tilt">Wrist tilt</label>
+        <input type="range" min="0" max="100" value="50" id="wrist_tilt">
+        <label for="wrist_rotate">Wrist rotate</label>
+        <input type="range" min="0" max="100" value="50" id="wrist_rotate">
+        <label for="claw">Claw</label>
+        <input type="range" min="0" max="100" value="50" id="claw">
+        <button type="button" id="apply_servos">Apply</button> 
+      </div>
+      <h1>Camera</h1>
+      <div class="camera_container">
+        <image src="http://mant1s-claw/camera" alt="Camera image" id="camera_image">
+        <br><br>
+        <button type="button" id="camera_refresh">Refresh</button> 
+      </div>
+
+      <h1>System control</h1>
+      <div class="system_container">
+        <button type="button" id="reset_system">Reset</button> 
+      </div>
+    </main>
+    <script>
+
+var immediate_update = document.getElementById('immediate_update');
+var shoulder_rotate_slider = document.getElementById('shoulder_rotate');
+var shoulder_tilt_slider = document.getElementById('shoulder_tilt');
+var elbow_slider = document.getElementById('elbow');
+var wrist_tilt_slider = document.getElementById('wrist_tilt');
+var wrist_rotate_slider = document.getElementById('wrist_rotate');
+var claw_slider = document.getElementById('claw');
+var apply_servos_button = document.getElementById('apply_servos');
+
+window.onload = function() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.open('GET', '/servo', true);
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4) {
+      if ((xhttp.status == 200) || (xhttp.status == 0)) {
+        var servo_pos = JSON.parse(xhttp.responseText);
+        shoulder_rotate_slider.value = Math.round(servo_pos.shoulder_rotate * 100);
+        shoulder_tilt_slider.value = Math.round(servo_pos.shoulder_tilt * 100);
+        elbow_slider.value = Math.round(servo_pos.elbow * 100);
+      }
+    }
+  }
+  xhttp.send();
+
+  var xhttp = new XMLHttpRequest();
+  xhttp.open('GET', 'http://mant1s-claw/servo', true);
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4) {
+      if ((xhttp.status == 200) || (xhttp.status == 0)) {
+        var servo_pos = JSON.parse(xhttp.responseText);
+        wrist_tilt_slider.value = Math.round(servo_pos.wrist_tilt * 100);
+        wrist_rotate_slider.value = Math.round(servo_pos.wrist_rotate * 100);
+        claw_slider.value = Math.round(servo_pos.claw * 100);
+      }
+    }
+  }
+  xhttp.send();
+}
+
+function post_json(url, data) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.open('POST', url, true);
+  xhttp.setRequestHeader('Content-type', 'application/json');
+  xhttp.send(JSON.stringify(data));
+}
+
+shoulder_rotate_slider.oninput = function() {
+  if (immediate_update.checked) post_json('/servo', {
+    shoulder_rotate: this.value / 100.0
+  });
+}
+
+shoulder_tilt_slider.oninput = function() {
+  if (immediate_update.checked) post_json('/servo', {
+    shoulder_tilt: this.value / 100.0
+  });
+}
+
+elbow_slider.oninput = function() {
+  if (immediate_update.checked) post_json('/servo', {
+    elbow: this.value / 100.0
+  });
+}
+
+wrist_tilt_slider.oninput = function() {
+  if (immediate_update.checked) post_json('http://mant1s-claw/servo', {
+    wrist_tilt: this.value / 100.0
+  });
+}
+
+wrist_rotate_slider.oninput = function() {
+  if (immediate_update.checked) post_json('http://mant1s-claw/servo', {
+    wrist_rotate: this.value / 100.0
+  });
+}
+
+claw_slider.oninput = function() {
+  if (immediate_update.checked) post_json('http://mant1s-claw/servo', {
+    claw: this.value / 100.0
+  });
+}
+
+apply_servos_button.onclick = function() {
+  post_json('http://mant1s-claw/servo', {
+    wrist_tilt: wrist_tilt_slider.value / 100.0,
+    wrist_rotate: wrist_rotate_slider.value / 100.0,
+    claw: claw_slider.value / 100.0
+  });
+  post_json('/servo', {
+    shoulder_rotate: shoulder_rotate_slider.value / 100.0,
+    shoulder_tilt: shoulder_tilt_slider.value / 100.0,
+    elbow: elbow_slider.value / 100.0
+  });
+}
+
+var camera_refresh = document.getElementById('camera_refresh')
+var camera_image = document.getElementById('camera_image')
+
+camera_refresh.onclick = function() {
+  camera_image.src = 'http://mant1s-claw/camera?' + Date.now();
+}
+
+var reset_system = document.getElementById('reset_system')
+
+reset_system.onclick = function() {
+  post_json('http://mant1s-claw/reset', {})
+  post_json('/reset', {})
+}
+
+    </script>
+  </body>
+</html>
+

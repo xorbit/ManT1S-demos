@@ -1,0 +1,40 @@
+from machine import Pin, I2C
+import requests
+import time
+
+
+# Detect debounce time in ms
+DETECT_DEBOUNCE_TIME = 2000
+
+# Light device address
+light_device = 'mant1s-light'
+
+# Qwiic connector I2C bus
+i2c = I2C(0, scl=Pin(32), sda=Pin(33), freq=100000)
+
+# PIR sensor monitor task
+def pir_monitor_task():
+    time_detect = None
+    while True:
+        now = time.ticks_ms()
+        try:
+            detect = bool(i2c.readfrom_mem(18, 3, 1)[0] & 0x01)
+        except:
+            detect = False
+        if detect:
+            if time_detect is None or \
+                    (time.ticks_diff(now, time_detect) > DETECT_DEBOUNCE_TIME):
+                time_detect = now
+                print ("Sending light on command")
+                requests.get(f'http://{light_device}/on')
+        else:
+            if time_detect is not None and \
+                    (time.ticks_diff(now, time_detect) > DETECT_DEBOUNCE_TIME):
+                time_detect = None
+                print ("Sending one last light on command")
+                requests.get(f'http://{light_device}/on')
+        time.sleep_ms(200)
+
+# Run the PIR monitor task
+pir_monitor_task()
+
