@@ -45,7 +45,7 @@ library.  Because it's asynchronous, it's easy to add other tasks that run
 
 ### pir_client_socket
 PIR client to turn on the light on the light server when movement is detected.
-This client uses a simple asyncchronous socket command channel.  Because it's
+This client uses a simple asynchronous socket command channel.  Because it's
 asynchronous, it's easy to add other tasks that run "simultaneously"
 (cooperative multitasking).
 

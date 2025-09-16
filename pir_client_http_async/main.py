@@ -14,10 +14,14 @@ light_device = 'mant1s-light'
 i2c = I2C(0, scl=Pin(32), sda=Pin(33), freq=100000)
 
 # Turn on light with async request
+# Other task can run while this is ongoing
 async def turn_light_on():
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f'http://{light_device}/on') as response:
-            pass
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f'http://{light_device}/on') as response:
+                pass
+    except:
+        print ("Sending light on command failed")
 
 # PIR sensor monitor task
 async def pir_monitor_task():
